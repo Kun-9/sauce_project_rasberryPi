@@ -1,3 +1,6 @@
+from numpy import source
+
+
 class Source:
     
     def __init__(self, name,  isLiquid):
@@ -24,6 +27,7 @@ class SourceList :
         self.source_list = []
         self.current_source_list = ["", "", "", "", "", "", ""]
         self.current_source_exist = [0,0,0,0,0,0]
+        self.source_comp = []
         
     def addSource(self, name, isLiquid):
         self.source_list.append(Source(name, isLiquid))
@@ -35,10 +39,15 @@ class SourceList :
             temp = self.source_list[source_num]
             self.current_source_list[Cartridge_number] = temp
             self.current_source_exist[Cartridge_number] = 1
+    def save_SourceComp(self, SourceStr):
+        self.source_comp.append(SourceStr)
         
     def delet_current_source(self, number):
         self.current_source_list[number] = ""
         self.current_source_exist[number] = 0
+    
+    def getSourceCompList(self):
+        return self.source_comp
     
     def getSourceList(self):
         return self.source_list

@@ -67,7 +67,57 @@ def addSource():
     Liquid_check.deselect()
     raise_frame(settingPage)
 
+def deleteComp() :
+    num = compListbox.curselection()[0]
+    compListbox.delete(num)
+    sc.getSourceCompList().pop(num)
 
+def applyComp() :
+    num = compListbox.curselection()[0]
+    sendStr = sc.getSourceCompList()[num]
+    sr.write(sendStr.encode())
+
+def saveSourceComp():
+    sendStr = ""
+    cnt = 0
+    name = compName.get()
+    
+    # 카트리지 번호
+    for i in range(6) :
+        if int(sourceNum[i].get()) > 0 :
+            sendStr += str(i+1) + " " 
+            cnt += 1
+    print(sendStr)
+    sendStr += ","
+    
+    # 무게
+    for i in range(6) :
+        if int(sourceNum[i].get()) > 0 :
+            sendStr += str(sourceNum[i].get()) + " "
+    print(sendStr)
+    sendStr += ","
+    
+    # 액체 여부
+    for i in range(6) :
+        if int(sourceNum[i].get()) > 0 :
+            tmp = sc.getCurrentSourceList()[i].getLiquid()
+            sendStr += str(tmp) + " "
+    print(sendStr)
+    
+    sendStr = str(cnt) + "," + sendStr
+    sc.save_SourceComp(sendStr)
+        
+    compListbox.insert(END, name)
+    messagebox.showinfo(title="알림", message="조합이 저장되었습니다.")
+    raise_frame(mainPage)
+
+
+def deleteSource() :
+    num = listbox.curselection()[0]
+    sc.getSourceList().pop(num)
+    listbox.delete(num)
+    
+    
 sr = serial.Serial('/dev/ttyUSB0', 9600, timeout = 1)
 # msg = "2,5 6 4 5 6 0,10 35 20 34 28 0,1 1 0 1 1 0"
 sc = source_class.SourceList()
@@ -99,6 +149,14 @@ addSourcePage.grid(row=0, column=0, sticky='news')
 registPage = Frame(root)
 registPage.grid(row=0, column=0, sticky='news')
 
+# 소스 조합 저장 창
+sourceCompPage = Frame(root)
+sourceCompPage.grid(row=0, column=0, sticky='news')
+
+# 소스 조합 목록 창
+compListPage = Frame(root)
+compListPage.grid(row=0, column=0, sticky='news')
+
 
 # sc.addSource("쯔유", 1)
 # sc.addSource("간장", 1)
@@ -128,24 +186,21 @@ slabel[0].grid(row = 0, column = 0, columnspan=12, padx = 3, pady = 10, sticky='
 
 for i in range(6) :
     slabel.append(Label(mainPage, text = cartname[i], width=4, height=2))    
-    slabel[i+1].grid(row = 1, column = 2*i, sticky=N+E+W+S ,columnspan=2, padx = 3, pady = 3)
+    slabel[i+1].grid(row = 1, column = 2*i, sticky=N+E+W+S ,columnspan=2, padx = 3, pady = 1)
     sourceNum.append(Entry(mainPage, width=4,justify='center'))
     sourceNum[i].insert(0, '0')
     sourceNum[i].grid(row = 2, column = 2*i, sticky=N+E+W+S ,columnspan=2, padx = 3, pady = 3)
 
-
-Button(mainPage, text='출력', command = sendBtn).grid(row = 3, column = 0, columnspan=12, padx = 2, pady = 10, sticky='news')
-Button(mainPage, text='장착 소스 변경', command=lambda:raise_frame(settingPage)).grid(row = 4, column = 0, columnspan=12, padx = 3, pady = 0, sticky='news')
+Button(mainPage, text='출력', command = sendBtn).grid(row = 3, column = 0, columnspan=12, padx = 2, pady = 1, sticky='news')
+Button(mainPage, text='현재 조합 저장', command = lambda:raise_frame(sourceCompPage)).grid(row = 4, column = 0, columnspan=6, padx = 2, pady = 1, sticky='news')
+Button(mainPage, text='저장 조합 보기', command = lambda:raise_frame(compListPage)).grid(row = 4, column = 6, columnspan=6, padx = 2, pady = 1, sticky='news')
+Button(mainPage, text='장착 소스 변경', command = lambda:raise_frame(settingPage)).grid(row = 5, column = 0, columnspan=12, padx = 3, pady = 0, sticky='news')
 
 # 세팅 페이지
 Label(settingPage, text='settingPage').pack(pady='3',side = 'top')
 listbox = Listbox(settingPage, selectmode='single', height=5)
 listbox.pack(pady='2', side='top')
 
-def deleteSource() :
-    num = listbox.curselection()[0]
-    sc.getSourceList().pop(num)
-    listbox.delete(num)
 
 Button(settingPage, text='카트리지에 등록', command=lambda:raise_frame(registPage)).pack(padx='20',pady='5')
 Button(settingPage, text='소스 추가', command=lambda:raise_frame(addSourcePage)).pack(pady = '7',side='left', padx = '2')
@@ -175,6 +230,30 @@ Liquid_check.grid(row = 2, column = 1, sticky='news', padx=10, pady=3)
 
 Button(addSourcePage, text='추가', width = 26, command=addSource).grid(row = 3, column = 0, sticky='news', columnspan=2, padx='15', pady='10')
 Button(addSourcePage, text='취소', width = 26, command=lambda:raise_frame(settingPage)).grid(row = 4, column = 0, sticky='news', columnspan=2, padx='15')
+
+
+# 소스 조합 추가 페이지
+Label(sourceCompPage, text = '소스 조합 등록', width = 13, height = 3).grid(row = 0, column = 0, columnspan = 12, sticky='news', pady='2')
+
+Label(sourceCompPage, text = '명칭', width = 13, height = 3).grid(row = 1, column = 0, sticky='news')
+
+compName = Entry(sourceCompPage, width=14)
+compName.grid(row = 1, column= 1 ,padx=10, pady=15)
+
+Button(sourceCompPage, text='추가', width = 26, command=saveSourceComp).grid(row = 3, column = 0, sticky='news', columnspan=2, padx='15', pady='10')
+Button(sourceCompPage, text='취소', width = 26, command=lambda:raise_frame(mainPage)).grid(row = 4, column = 0, sticky='news', columnspan=2, padx='15')
+
+# 소스 조합 목록 조회 페이지
+
+Label(compListPage, text='소스 조합 목록').pack(pady='12')
+compListbox = Listbox(compListPage, selectmode='single', height=5)
+compListbox.pack(pady='2')
+
+
+
+Button(compListPage, text='조합 출력', command=applyComp, width='7').pack(pady = '7',side='left', padx = '2')
+Button(compListPage, text='선택 삭제', command=deleteComp, width='7').pack(pady = '7',side = 'left', padx = '2')
+Button(compListPage, text='취소', command=lambda:raise_frame(mainPage), width='7').pack(side='left', padx = '2')
 
 
 raise_frame(mainPage)
