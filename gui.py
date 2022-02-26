@@ -138,13 +138,19 @@ Button(mainPage, text='출력', command = sendBtn).grid(row = 3, column = 0, col
 Button(mainPage, text='장착 소스 변경', command=lambda:raise_frame(settingPage)).grid(row = 4, column = 0, columnspan=12, padx = 3, pady = 0, sticky='news')
 
 # 세팅 페이지
-Label(settingPage, text='settingPage').pack(pady='3')
+Label(settingPage, text='settingPage').pack(pady='3',side = 'top')
 listbox = Listbox(settingPage, selectmode='single', height=5)
-listbox.pack(pady='2')
+listbox.pack(pady='2', side='top')
 
-Button(settingPage, text='카트리지에 등록', command=lambda:raise_frame(registPage)).pack(pady = '7')
-Button(settingPage, text='소스 추가', command=lambda:raise_frame(addSourcePage)).pack(side='left',padx='34')
-Button(settingPage, text='돌아가기', command=lambda:raise_frame(mainPage)).pack(side='left')
+def deleteSource() :
+    num = listbox.curselection()[0]
+    sc.getSourceList().pop(num)
+    listbox.delete(num)
+
+Button(settingPage, text='카트리지에 등록', command=lambda:raise_frame(registPage)).pack(padx='20',pady='5')
+Button(settingPage, text='소스 추가', command=lambda:raise_frame(addSourcePage)).pack(pady = '7',side='left', padx = '2')
+Button(settingPage, text='선택 삭제', command=deleteSource).pack(pady = '7',side = 'left', padx = '2')
+Button(settingPage, text='돌아가기', command=lambda:raise_frame(mainPage)).pack(side='left', padx = '2')
 
 
 # 카트리지 등록 페이지
