@@ -1,26 +1,27 @@
-import tkinter
 import socket
-from source_management import sauce_manage
+# from sauceManagement import sauce_manage
+from sauceManagement import sauce_manage_j
 import serial
 import time
-from tkinter import *
-from tkinter import messagebox
 import threading
-# from socketClass import serverModule
+import json as j
 
 global gloStr
 gloStr = ''
 
 global serialArdu
-serialArdu = serial.Serial('/dev/ttyUSB0', 9600, timeout = 1)
+serialArdu = serial.Serial('/dev/ttyUSB_DEV1', 9600, timeout = 1)
 
 global arr
 arr = [[0 for col in range(4)] for row in range(6)]
 
-s = sauce_manage.sauceList()
+s = sauce_manage_j.sauceList()
 
-s.addsauce("hello", 1, 2277814929)
-s.addsauce("hello2", 1, 21124312446)
+# s.addsauce("hello", 1, 2277814929)
+# s.addsauce("hello2", 1, 21124312446)
+
+global client_socket
+
 
 
 
@@ -34,6 +35,7 @@ class SokServer:
         self.PORT = PORT
         
     def startServer(self):
+        global client_socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
@@ -52,8 +54,9 @@ class SokServer:
         server_socket.listen()
 
         # accept 함수에서 대기하다가 클라이언트가 접속하면 새로운 소켓을 리턴합니다. 
-        client_socket, addr = server_socket.accept()
-
+        acp = server_socket.accept()
+        client_socket = acp[0]
+        addr = acp[1]
         # 접속한 클라이언트의 주소입니다.
         print('Connected by', addr)
 
@@ -75,13 +78,49 @@ class SokServer:
             global gloStr
             gloStr = data.decode()
             
-            # 아두이노에 문자열 전송
-            serialArdu.write(data)
-            print('gloStr = ',gloStr)
+            # 임시로 7로 설정
+            # 7이 들어왔을때 소스 수정
+            # 들어오는건 json 형식의 소스 정보와 아이디
+            # ex) {"name" : "간장", "isLiquid" : "1", "id" : "123456"}
+            if gloStr[:1] == '7':
+                editJson = j.loads(gloStr[1:])
+                
+                print('editJson : ' + str(editJson))
+                
+                id = editJson["id"]
+                s.editSauce(id, editJson)
+                s.getCurrentsauceList()
+                
+            else:
+                # 아두이노에 문자열 전송
+                serialArdu.write(data)
+                print('gloStr = ',gloStr)
+            
+            # 원래 1~6 으로 시작함 
+            # 0으로 들어오면 소스 스캔 시작함
+            # 결과는 어떻게 내보내지?
+            # dataType
+            # 0 : 일반 메시지
+            # 1 : 소스 출력 문자열
+            # 2 : 소스 변경 문자열
+            # 3 : 
+            # 문자열의 가장 앞 문자가 2라면 소스 수정 메서드 실행
+            # 파싱 후 이름, 액체여부 값 파악
+            # if int()
+            
+            # sauce = s.getSauce(id)
+            # sauce.setName()
+            # sauce.setLiquid()
+                        
+            
+            
+            
             
                 
             # 받은 문자열을 다시 클라이언트로 전송해줍니다.(에코) 
-            client_socket.sendall(data)
+            # client_socket.sendall("client".encode())
+            # client_socket.send("string".decode())
+            # client_socket.sendall(data)
 
 
         # 소켓을 닫습니다.
@@ -99,22 +138,28 @@ class SerialInput:
                 content = serialArdu.readline().decode()
                 
                 stringType = content[0:1]
+                # 메시지 타입이 1이라면 소스 스캔값 받아옴
+                # 일반 문자열은 0
                 if (stringType == '1') :
                     for i in range(6):
                         # if serialArdu.in_waiting != 0:
                         id = serialArdu.readline().decode()[0:-3].replace(" ", "")
                         
                         if int(id[:2]) != 0:
-                            if s.findById(int(id)):
-                                print("이미 등록된 ID : ", int(id))
-                            else :
-                                s.addsauce('null', 1, int(id))
-                                print("새로 등록한 ID : ", int(id))
+                            s.registCurrentSauce(i, str(id))
                             
-                    
+                        else :
+                            # data = {"name" : 'name', "isLiquid" : 1, "id" : 'null'}
+                            s.registCurrentSauce(i, 0)
+                            
+                    s.saveCurrnetSourceList()
+                    sendStr = str(s.getCurrentsauceList()).replace('\'', '\"' )
+                    client_socket.sendall(sendStr.encode())
+                    # print(s.getCurrentsauceList())
+                    print(s.currentSauceList)
                 else :
                     
-                    print(content, end="") 
+                    print(content[2:], end="") 
                 
 
 
@@ -145,7 +190,36 @@ InputThread.start()
 # print(s.getsauceList()[0].getId())
 # print(s.getsauceList()[1].getId())
 
-   
+# for i in range(6):   
+#     id = input()
+#     # a = sauce_manage_j.Sauce('null', 1, id)
+#     # print(a.getJson())
+#     # s.delSauce(id)
+#     # s.addSauce('null', 1, id)
+#     # print(s.getSauce(id))
+#     s.registCurrentSauce(i+1, id)   
+
+    
+# s.saveCurrnetSourceList()
+# # client_socket.sendall(s.getCurrentsauceList().encode())
+# print(s.getCurrentsauceList())
+
+
+i = input()
+a = s.currentSauceList["body"] = [
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null" 
+]
+s.currentSauceList["body"][0] = {"name" : "hello", "h" : "d"}
+for i in range(6):
+    print(s.currentSauceList["body"][i])
+# sendStr = str(s.getCurrentsauceList()).replace('\'', '\"' )
+# client_socket.sendall(sendStr.encode())
+    
 
         
     
